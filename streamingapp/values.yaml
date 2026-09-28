@@ -1,0 +1,65 @@
+# ECR registry, e.g. 123456789012.dkr.ecr.ap-south-1.amazonaws.com
+registry: ""
+
+rollingUpdate:
+  maxUnavailable: 0
+  maxSurge: 1
+
+services:
+  auth:
+    image: streaming-auth
+    tag: "1.0.0"
+    replicas: 2
+    port: 3001
+    healthPath: /health
+  streaming:
+    image: streaming-stream
+    tag: "1.0.0"
+    replicas: 2
+    port: 3002
+    healthPath: /api/health
+  admin:
+    image: streaming-admin
+    tag: "1.0.0"
+    replicas: 2
+    port: 3003
+    healthPath: /api/health
+  chat:
+    image: streaming-chat
+    tag: "1.0.0"
+    replicas: 1      # Socket.IO has no shared adapter; >1 replica breaks cross-pod broadcast
+    port: 3004
+    healthPath: /api/health
+  frontend:
+    image: streaming-frontend
+    tag: "1.0.0"
+    replicas: 2
+    port: 80
+    healthPath: /
+
+resources:
+  requests: {cpu: 50m, memory: 128Mi}
+  limits: {cpu: 300m, memory: 384Mi}
+
+config:
+  mongoDb: streamingapp
+  clientUrls: ""        # set to http://<ingress-host> after first deploy ("" = allow all)
+  publicUrl: ""         # http://<ingress-host>
+  awsRegion: ap-south-1
+  awsS3Bucket: ""
+  awsCdnUrl: ""
+
+# Pass at install time with --set / --set-file; never commit real values
+secrets:
+  jwtSecret: changeme
+  awsAccessKeyId: ""
+  awsSecretAccessKey: ""
+
+mongo:
+  image: mongo:6
+  storageSize: 5Gi
+  storageClass: gp2
+
+ingress:
+  className: nginx
+  host: ""              # empty = match any host (use the ELB DNS name)
